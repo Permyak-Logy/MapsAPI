@@ -9,12 +9,12 @@ SCREEN_SIZE = [600, 450]
 
 
 class StaticMapAPI:
-    map_file = 'map.jpg'
+    map_file = 'map.png'
     _server = 'https://static-maps.yandex.ru/1.x/'
     ll = [37.620070, 55.753630]
     size = [600, 450]
-    l = 'sat'
-    z = 1
+    l = 'map'
+    z = 13
     ZOOM_MAX = 20
     ZOOM_MIN = 1
     pixmap = None
@@ -55,8 +55,9 @@ class StaticMapAPI:
         if self.z < self.ZOOM_MIN:
             self.z = self.ZOOM_MIN
 
-    def move(self, x, y):
-        pass
+    def move(self, x=0, y=0):
+        self.ll[0] += x * 1.05 ** self.z * 0.05
+        self.ll[1] += y * 1.05 ** self.z * 0.05
 
 
 class MapsAPI(QMainWindow):
@@ -81,7 +82,13 @@ class MapsAPI(QMainWindow):
         elif event.key() == Qt.Key_PageDown:
             self.static_map_api.zoom_out(1)
         elif event.key() == Qt.Key_Up:
-            self.static_map_api.move(1)
+            self.static_map_api.move(x=0, y=1)
+        elif event.key() == Qt.Key_Down:
+            self.static_map_api.move(x=0, y=-1)
+        elif event.key() == Qt.Key_Right:
+            self.static_map_api.move(x=1, y=0)
+        elif event.key() == Qt.Key_Left:
+            self.static_map_api.move(x=-1, y=0)
         else:
             return
         self.update_map()
