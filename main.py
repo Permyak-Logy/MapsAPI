@@ -7,13 +7,46 @@ import os
 SCREEN_SIZE = [600, 450]
 
 
-class MapFuncs:
+class StaticMap:
     map_file = 'map.jpg'
+    _server = 'https://static-maps.yandex.ru/1.x/'
+    __ll = [37.620070, 55.753630]
+    __size = [600, 450]
+    __l = 'sat'
+    __z = '13'
+    __pixmap = None
+
+    def set_params(self, **params):
+        pass
+
+    def update_map(self):
+        params = {
+            'll': f'{self.__ll[0]},{self.__ll[1]}',
+            'size': f'{self.__size[0]},{self.__size[1]}',
+            'l': self.__l,
+            'z': self.__z
+        }
+        response = requests.get(self._server, params=params)
+        if not response:
+            raise Exception(response.reason)
+
+        with open(self.map_file, "wb") as file:
+            file.write(response.content)
+        self.__pixmap = QPixmap(self.map_file)
+
+    def get_pixmap(self, update=False):
+        if update:
+            self.update_map()
+        return self.__pixmap
+
+    def get_size(self):
+        return self.__size
 
 
 class MapsAPI(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.static_map = StaticMap()
         self.initUI()
 
     def initUI(self):
@@ -21,17 +54,11 @@ class MapsAPI(QMainWindow):
         self.setFixedSize(*SCREEN_SIZE)
 
         self.label_map = QLabel(self)
-        map_request = "https://static-maps.yandex.ru/1.x/?ll=37.620070,55.753630&size=600,450&z=13&l=sat"
-        response = requests.get(map_request)
-        with open(MapFuncs.map_file, "wb") as file:
-            file.write(response.content)
-
-        self.pixmap_map = QPixmap(MapFuncs.map_file)
-        self.label_map.setPixmap(self.pixmap_map)
-        self.label_map.resize(self.label_map.sizeHint())
+        self.label_map.setPixmap(self.static_map.get_pixmap(update=True))
+        self.label_map.resize(*self.static_map.get_size())
 
     def closeEvent(self, *args, **kwargs):
-        os.remove(MapFuncs.map_file)
+        os.remove(StaticMap.map_file)
 
 
 if __name__ == '__main__':
