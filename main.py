@@ -1,9 +1,10 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QLineEdit, QRadioButton
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QLineEdit, QRadioButton, QCheckBox
 from PyQt5.QtGui import QPixmap
 from PyQt5.Qt import Qt
 import requests
 import sys
 import os
+import json
 
 SCREEN_SIZE = [600, 450]
 
@@ -13,7 +14,7 @@ class GeocoderAPI:
     __apikey = '40d1649f-0493-4b70-98ba-98533de7710b'
 
     @staticmethod
-    def get_toponym(toponym_to_find, apikey=None, api_server=None):
+    def get_toponym(toponym_to_find):
         geocoder_params = {
             "apikey": GeocoderAPI.__apikey,
             "geocode": toponym_to_find,
@@ -151,6 +152,9 @@ class MapsAPI(QMainWindow):
         self.btn_discharge_obj = QPushButton('Сброс', self)
         self.btn_discharge_obj.move(0, 160)
 
+        self.check_box_postcode = QCheckBox('Postcode', self)
+        self.check_box_postcode.move(10, 190)
+
         self.update_map()
 
     def update_map(self):
@@ -161,14 +165,31 @@ class MapsAPI(QMainWindow):
     def search_obj(self):
         try:
             toponym_to_find = self.line_edit_search.text()
+            toponym = GeocoderAPI.get_toponym(toponym_to_find)
+            address = toponym["metaDataProperty"]["GeocoderMetaData"]["text"]
+            postcode = None
+            try:
+                # print(json.dumps(toponym, ensure_ascii=False, indent=4))
+                postcode = toponym["metaDataProperty"]["GeocoderMetaData"]["AddressDetails"]["Country"][
+                    "AdministrativeArea"]["Locality"]["Thoroughfare"]["Premise"]["PostalCode"]["PostalCodeNumber"]
+            except Exception as E:
+                # print(E.__class__.__name__, E)
+                pass
+            self.setWindowTitle(
+                f'Адреc: {address}{f", {postcode}" if postcode and self.check_box_postcode.isChecked() else ""}')
             ll = GeocoderAPI.get_longitude_and_lattitude(toponym_to_find)
             spn = GeocoderAPI.get_spn(toponym_to_find)
             self.static_map_api.set_params(ll=ll, pt=f'{ll[0]},{ll[1]}', spn=spn)
-            self.update_map()
         except IndexError as E:
-            print('Объект не найден')
+            self.discharge_search()
+            self.setWindowTitle('Не найдено ничего')
+        except Exception as E:
+            print(E)
+        else:
+            self.update_map()
 
     def discharge_search(self):
+        self.setWindowTitle('MapsAPI')
         self.static_map_api.set_params(pt=None)
         self.line_edit_search.setText('')
         self.update_map()
