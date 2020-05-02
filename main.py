@@ -6,7 +6,7 @@ import sys
 import os
 import json
 
-SCREEN_SIZE = [600, 450]
+SCREEN_SIZE = [600, 490]
 
 
 class GeocoderAPI:
@@ -138,22 +138,25 @@ class MapsAPI(QMainWindow):
         self.setWindowTitle('Maps API')
         self.setFixedSize(*SCREEN_SIZE)
         self.label_map = QLabel(self)
-        self.label_map.move(100, 0)
+        self.label_map.move(100, 40)
         self.mode_buttons = [QRadioButton(text, self) for text in ['map', 'sat', 'sat,skl']]
         self.mode_buttons[0].setChecked(True)
-        [elem.move(10, 10 + 30 * i) for i, elem in enumerate(self.mode_buttons)]
+        [elem.move(10, 40 + 30 * i) for i, elem in enumerate(self.mode_buttons)]
 
         self.line_edit_search = QLineEdit(self)
-        self.line_edit_search.move(0, 100)
+        self.line_edit_search.move(0, 130)
 
         self.btn_search_obj = QPushButton('Искать', self)
-        self.btn_search_obj.move(0, 130)
+        self.btn_search_obj.move(0, 160)
 
         self.btn_discharge_obj = QPushButton('Сброс', self)
-        self.btn_discharge_obj.move(0, 160)
+        self.btn_discharge_obj.move(0, 190)
 
         self.check_box_postcode = QCheckBox('Postcode', self)
-        self.check_box_postcode.move(10, 190)
+        self.check_box_postcode.move(10, 220)
+
+        self.label_address = QLabel(self)
+        self.label_address.move(10, 10)
 
         self.update_map()
 
@@ -163,20 +166,20 @@ class MapsAPI(QMainWindow):
         self.label_map.resize(*self.static_map_api.get_size())
 
     def search_obj(self):
+        self.setWindowTitle('MapsAPI')
         try:
             toponym_to_find = self.line_edit_search.text()
             toponym = GeocoderAPI.get_toponym(toponym_to_find)
             address = toponym["metaDataProperty"]["GeocoderMetaData"]["text"]
             postcode = None
             try:
-                # print(json.dumps(toponym, ensure_ascii=False, indent=4))
                 postcode = toponym["metaDataProperty"]["GeocoderMetaData"]["AddressDetails"]["Country"][
                     "AdministrativeArea"]["Locality"]["Thoroughfare"]["Premise"]["PostalCode"]["PostalCodeNumber"]
             except Exception as E:
-                # print(E.__class__.__name__, E)
                 pass
-            self.setWindowTitle(
+            self.label_address.setText(
                 f'Адреc: {address}{f", {postcode}" if postcode and self.check_box_postcode.isChecked() else ""}')
+            self.label_address.resize(self.label_address.sizeHint())
             ll = GeocoderAPI.get_longitude_and_lattitude(toponym_to_find)
             spn = GeocoderAPI.get_spn(toponym_to_find)
             self.static_map_api.set_params(ll=ll, pt=f'{ll[0]},{ll[1]}', spn=spn)
@@ -189,7 +192,7 @@ class MapsAPI(QMainWindow):
             self.update_map()
 
     def discharge_search(self):
-        self.setWindowTitle('MapsAPI')
+        self.label_address.setText('')
         self.static_map_api.set_params(pt=None)
         self.line_edit_search.setText('')
         self.update_map()
